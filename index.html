@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>To do</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --paper: #E9EEE6;
+    --sheet: #FBFCF9;
+    --ink: #1C2541;
+    --ink-soft: #5B6378;
+    --done: #8E978C;
+    --line: #D5DCD1;
+    --marigold: #E8A33D;
+    --link: #2F5DA8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Instrument Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 40px 20px 64px;
+  }
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  .count { color: var(--ink-soft); font-size: 15px; }
+
+  /* Composer */
+  .composer {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--sheet);
+    border: 1.5px solid var(--ink);
+    border-radius: 14px;
+    padding: 12px 12px 12px 16px;
+  }
+  .composer:focus-within { box-shadow: 0 0 0 3px rgba(232,163,61,.45); }
+  #editor {
+    flex: 1;
+    min-height: 26px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 3px 0;
+    outline: none;
+    overflow-wrap: anywhere;
+  }
+  #editor:empty::before { content: attr(data-placeholder); color: var(--ink-soft); pointer-events: none; }
+  #editor a { color: var(--link); }
+  .add-btn {
+    flex: none;
+    border: 0;
+    background: var(--ink);
+    color: var(--sheet);
+    font: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 6px 14px;
+    border-radius: 9px;
+    cursor: pointer;
+  }
+  .add-btn:hover { background: #2B3863; }
+  .hint { color: var(--ink-soft); font-size: 13px; margin: 8px 4px 28px; }
+
+  /* Lists */
+  ul { list-style: none; margin: 0; padding: 0; }
+  .task {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .task:first-child { border-top: 1px solid var(--line); }
+  .check {
+    flex: none;
+    width: 24px; height: 24px;
+    margin-top: 0;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    background: transparent;
+    display: grid; place-items: center;
+    cursor: pointer;
+    padding: 0;
+    transition: background .18s ease, border-color .18s ease;
+  }
+  .check svg { width: 13px; height: 13px; }
+  .check path {
+    stroke: var(--ink);
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 20;
+    stroke-dashoffset: 20;
+    transition: stroke-dashoffset .22s ease .05s;
+  }
+  .check:hover path { stroke-dashoffset: 12; opacity: .35; }
+  .task.is-done .check, .task.completing .check { background: var(--marigold); border-color: var(--marigold); }
+  .task.is-done .check path, .task.completing .check path { stroke-dashoffset: 0; opacity: 1; }
+  .text { flex: 1; min-width: 0; overflow-wrap: anywhere; padding-top: 1px; }
+  .text a { color: var(--link); text-underline-offset: 2px; }
+  .text a:hover { text-decoration-thickness: 2px; }
+  .task.is-done .text, .task.completing .text { color: var(--done); text-decoration: line-through; text-decoration-color: rgba(142,151,140,.7); }
+  .task.is-done .text a { color: var(--done); }
+  .del {
+    flex: none;
+    border: 0; background: none;
+    color: var(--ink-soft);
+    font-size: 20px; line-height: 1;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+  }
+  .task:hover .del, .del:focus-visible { opacity: 1; }
+  .del:hover { background: var(--line); color: var(--ink); }
+  @media (hover: none) { .del { opacity: .6; } }
+
+  .empty { color: var(--ink-soft); padding: 18px 4px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+  /* Completed */
+  .completed { margin-top: 32px; }
+  .completed-bar { display: flex; align-items: center; justify-content: space-between; }
+  .toggle {
+    display: flex; align-items: center; gap: 8px;
+    border: 0; background: none; padding: 6px 4px;
+    font: inherit; font-weight: 600; color: var(--ink-soft);
+    cursor: pointer; border-radius: 6px;
+  }
+  .toggle:hover { color: var(--ink); }
+  .chev { transition: transform .2s ease; }
+  .completed.open .chev { transform: rotate(90deg); }
+  .clear {
+    border: 0; background: none; font: inherit; font-size: 14px;
+    color: var(--ink-soft); cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+  }
+  .clear:hover { color: var(--ink); }
+  #doneList { display: none; margin-top: 6px; }
+  .completed.open #doneList { display: block; }
+
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+  @media (max-width: 480px) {
+    .wrap { padding-top: 24px; }
+    h1 { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>To do</h1>
+    <span class="count" id="count"></span>
+  </header>
+
+  <div class="composer">
+    <div id="editor" contenteditable="true" role="textbox" aria-multiline="true"
+         aria-label="New task" data-placeholder="Add a task, or paste a list"></div>
+    <button class="add-btn" id="addBtn">Add</button>
+  </div>
+  <p class="hint">Enter adds. Shift + Enter starts a new line, and each line becomes its own task.</p>
+
+  <ul id="openList"></ul>
+
+  <section class="completed" id="completed" hidden>
+    <div class="completed-bar">
+      <button class="toggle" id="toggle" aria-expanded="false" aria-controls="doneList">
+        <svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="doneLabel">Completed</span>
+      </button>
+      <button class="clear" id="clearBtn">Clear completed</button>
+    </div>
+    <ul id="doneList"></ul>
+  </section>
+</div>
+
+<script>
+(() => {
+  const STORAGE_KEY = 'todo-app-state';
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let state = { tasks: [], showCompleted: false };
+
+  const editor = document.getElementById('editor');
+  const openList = document.getElementById('openList');
+  const doneList = document.getElementById('doneList');
+  const completedEl = document.getElementById('completed');
+  const toggleBtn = document.getElementById('toggle');
+
+  /* ---------- storage ---------- */
+  async function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) state = Object.assign(state, JSON.parse(raw));
+    } catch (e) { console.error('Could not read saved tasks', e); }
+  }
+  async function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) { console.error('Save failed', e); }
+  }
+  // keep multiple open tabs in sync
+  window.addEventListener('storage', e => {
+    if (e.key === STORAGE_KEY && e.newValue) {
+      try { state = Object.assign(state, JSON.parse(e.newValue)); render(); } catch (_) {}
+    }
+  });
+
+  /* ---------- parsing pasted / typed content into lines of segments ---------- */
+  const URL_RE = /\b(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+  const BLOCKS = new Set(['P','DIV','LI','UL','OL','TR','H1','H2','H3','H4','H5','H6','BLOCKQUOTE','PRE','SECTION','ARTICLE','TABLE','DT','DD']);
+  const SKIP = new Set(['SCRIPT','STYLE','HEAD','META','TITLE','LINK']);
+  const safeHref = h => /^(https?:|mailto:)/i.test((h || '').trim()) ? h.trim() : null;
+
+  function nodeToLines(root) {
+    const lines = [[]];
+    const newline = () => { if (lines[lines.length - 1].length) lines.push([]); };
+    const push = seg => lines[lines.length - 1].push(seg);
+
+    (function walk(node) {
+      for (const child of node.childNodes) {
+        if (child.nodeType === 3) {
+          push({ t: 'text', v: child.nodeValue.replace(/[\r\n\t]+/g, ' ') });
+        } else if (child.nodeType === 1) {
+          const tag = child.tagName;
+          if (SKIP.has(tag)) continue;
+          if (tag === 'BR') { newline(); continue; }
+          if (tag === 'A') {
+            const href = safeHref(child.getAttribute('href'));
+            const label = child.textContent.replace(/\s+/g, ' ').trim();
+            if (href && label) { push({ t: 'link', v: label, href }); continue; }
+          }
+          const block = BLOCKS.has(tag);
+          if (block) newline();
+          walk(child);
+          if (block) newline();
+        }
+      }
+    })(root);
+    return lines.map(cleanLine).filter(l => l.length);
+  }
+
+  function cleanLine(segs) {
+    // merge adjacent text, collapse whitespace
+    const merged = [];
+    for (const s of segs) {
+      const last = merged[merged.length - 1];
+      if (s.t === 'text' && last && last.t === 'text') last.v += s.v;
+      else merged.push({ ...s });
+    }
+    merged.forEach(s => { if (s.t === 'text') s.v = s.v.replace(/\s+/g, ' '); });
+    // trim ends
+    if (merged[0] && merged[0].t === 'text') merged[0].v = merged[0].v.replace(/^\s+/, '');
+    const end = merged[merged.length - 1];
+    if (end && end.t === 'text') end.v = end.v.replace(/\s+$/, '');
+    // strip bullets / checkboxes / numbering at the start of a line
+    if (merged[0] && merged[0].t === 'text') {
+      merged[0].v = merged[0].v.replace(/^(\[[ xX]?\]\s*|[-*•◦▪–]\s+|\d+[.)]\s+)+/, '');
+    }
+    // linkify bare URLs inside text
+    const out = [];
+    for (const s of merged) {
+      if (s.t !== 'text') { out.push(s); continue; }
+      let i = 0;
+      s.v.replace(URL_RE, (m, _g, idx) => {
+        const url = m.replace(/[.,;:!?)\]]+$/, '');
+        if (idx > i) out.push({ t: 'text', v: s.v.slice(i, idx) });
+        out.push({ t: 'link', v: url, href: url.startsWith('www.') ? 'https://' + url : url });
+        i = idx + url.length;
+        return m;
+      });
+      if (i < s.v.length) out.push({ t: 'text', v: s.v.slice(i) });
+    }
+    return out.filter(s => s.v && (s.t === 'link' || s.v.length));
+  }
+
+  function textToLines(text) {
+    const div = document.createElement('div');
+    text.split(/\r?\n/).forEach((line, i) => {
+      if (i) div.appendChild(document.createElement('br'));
+      div.appendChild(document.createTextNode(line));
+    });
+    return nodeToLines(div);
+  }
+
+  /* ---------- rendering segments ---------- */
+  function prettyUrl(s) {
+    let v = s.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+    return v.length > 50 ? v.slice(0, 47) + '…' : v;
+  }
+  function renderSegments(segs, container, forEditor) {
+    for (const s of segs) {
+      if (s.t === 'link') {
+        const a = document.createElement('a');
+        a.href = s.href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        const isRawUrl = s.v === s.href || 'https://' + s.v === s.href;
+        a.textContent = !forEditor && isRawUrl ? prettyUrl(s.v) : s.v;
+        if (!forEditor) a.title = s.href;
+        container.appendChild(a);
+      } else {
+        container.appendChild(document.createTextNode(s.v));
+      }
+    }
+  }
+
+  /* ---------- editor ---------- */
+  editor.addEventListener('paste', e => {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+    let lines = [];
+    if (html) lines = nodeToLines(new DOMParser().parseFromString(html, 'text/html').body);
+    if (!lines.length && text) lines = textToLines(text);
+    if (!lines.length) return;
+
+    const frag = document.createDocumentFragment();
+    lines.forEach((line, i) => {
+      if (i) frag.appendChild(document.createElement('br'));
+      renderSegments(line, frag, true);
+    });
+    const lastNode = frag.lastChild;
+    const sel = window.getSelection();
+    if (!sel.rangeCount || !editor.contains(sel.anchorNode)) {
+      editor.appendChild(frag);
+    } else {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(frag);
+    }
+    // caret after pasted content
+    const r = document.createRange();
+    r.setStartAfter(lastNode);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  });
+
+  editor.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      submit();
+    }
+  });
+  // keep :empty placeholder working after deleting everything
+  editor.addEventListener('input', () => {
+    if (!editor.textContent.trim() && !editor.querySelector('a')) editor.innerHTML = '';
+  });
+  // let links inside the editor open with Ctrl/Cmd+click
+  editor.addEventListener('click', e => {
+    const a = e.target.closest('a');
+    if (a && (e.metaKey || e.ctrlKey)) window.open(a.href, '_blank', 'noopener');
+  });
+
+  document.getElementById('addBtn').addEventListener('click', () => { submit(); editor.focus(); });
+
+  function submit() {
+    const lines = nodeToLines(editor);
+    if (!lines.length) return;
+    const now = Date.now();
+    lines.forEach((segments, i) => {
+      state.tasks.push({ id: now + '-' + i + '-' + Math.random().toString(36).slice(2, 7), segments, done: false, created: now + i, completedAt: null });
+    });
+    editor.innerHTML = '';
+    render();
+    save();
+  }
+
+  /* ---------- task actions ---------- */
+  function toggleTask(id, li) {
+    const task = state.tasks.find(t => t.id === id);
+    if (!task) return;
+    const commit = () => {
+      task.done = !task.done;
+      task.completedAt = task.done ? Date.now() : null;
+      render();
+      save();
+    };
+    if (!task.done && !reduceMotion) {
+      li.classList.add('completing');
+      setTimeout(commit, 380);
+    } else commit();
+  }
+  function deleteTask(id) {
+    state.tasks = state.tasks.filter(t => t.id !== id);
+    render();
+    save();
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    state.showCompleted = !state.showCompleted;
+    render();
+    save();
+  });
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    const n = state.tasks.filter(t => t.done).length;
+    if (!n || !confirm(`Delete ${n} completed task${n === 1 ? '' : 's'}?`)) return;
+    state.tasks = state.tasks.filter(t => !t.done);
+    render();
+    save();
+  });
+
+  /* ---------- render ---------- */
+  function taskEl(task) {
+    const li = document.createElement('li');
+    li.className = 'task' + (task.done ? ' is-done' : '');
+
+    const check = document.createElement('button');
+    check.className = 'check';
+    check.setAttribute('aria-label', task.done ? 'Mark as not done' : 'Mark as done');
+    check.innerHTML = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7"/></svg>';
+    check.addEventListener('click', () => toggleTask(task.id, li));
+
+    const text = document.createElement('div');
+    text.className = 'text';
+    renderSegments(task.segments, text, false);
+
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.setAttribute('aria-label', 'Delete task');
+    del.textContent = '×';
+    del.addEventListener('click', () => deleteTask(task.id));
+
+    li.append(check, text, del);
+    return li;
+  }
+
+  function render() {
+    const open = state.tasks.filter(t => !t.done).sort((a, b) => a.created - b.created);
+    const done = state.tasks.filter(t => t.done).sort((a, b) => b.completedAt - a.completedAt);
+
+    openList.innerHTML = '';
+    if (!open.length) {
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = done.length ? 'Everything is done. Add something new above.' : 'No tasks yet. Type one above or paste in a list.';
+      openList.appendChild(li);
+    } else open.forEach(t => openList.appendChild(taskEl(t)));
+
+    doneList.innerHTML = '';
+    done.forEach(t => doneList.appendChild(taskEl(t)));
+
+    completedEl.hidden = !done.length;
+    completedEl.classList.toggle('open', state.showCompleted);
+    toggleBtn.setAttribute('aria-expanded', String(state.showCompleted));
+    document.getElementById('doneLabel').textContent = `Completed (${done.length})`;
+    document.getElementById('count').textContent = open.length ? `${open.length} open` : '';
+  }
+
+  load().then(render);
+})();
+</script>
+</body>
+</html>
